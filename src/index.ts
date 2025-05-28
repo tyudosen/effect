@@ -10,7 +10,7 @@ interface JsonError {
 
 const fetchRequest = Effect.tryPromise(
 	{
-		try: () => fetch("https://pokeapi.co/api/v2/pokemon/garchom/"),
+		try: () => fetch("https://pokeapi.co/api/v2/pokemon/garchomp/"),
 		catch: (): FetchError => ({ _tag: "FetchError" })
 	}
 )
@@ -32,6 +32,12 @@ const savePokemon = (pokemon: string) => Effect.tryPromise(
 
 const main = pipe(
 	fetchRequest,
+	Effect.filterOrFail(
+		(response) => response.ok,
+		(): FetchError => ({
+			_tag: "FetchError"
+		})
+	),
 	Effect.flatMap(jsonResponse),
 	Effect.tap((res) => Console.log(res)),
 	Effect.catchTags({
