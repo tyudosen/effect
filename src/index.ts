@@ -1,4 +1,15 @@
-import { Console, Data, Effect, pipe } from "effect";
+import { Console, Data, Effect, pipe, Schema } from "effect";
+
+class Pokemon extends Schema.Class<Pokemon>("Pokemon")({
+	// 👇 Parameters are the same as `Schema.Struct`
+	id: Schema.Number,
+	order: Schema.Number,
+	name: Schema.String,
+	height: Schema.Number,
+	weight: Schema.Number,
+}) { }
+
+const decodePokemon = Schema.decodeUnknown(Pokemon)
 
 class FetchError extends Data.TaggedError("FetchError")<
 	{
@@ -41,7 +52,8 @@ const program = Effect.gen(function* () {
 		throw new FetchError({ customMessage: 'fetchError' })
 	}
 
-	return yield* jsonResponse(response)
+	const json = yield* jsonResponse(response)
+	return yield* decodePokemon(json)
 
 })
 
@@ -49,7 +61,8 @@ const main = program.pipe(
 	Effect.tap((res) => Console.log(res)),
 	Effect.catchTags({
 		FetchError: () => Effect.succeed("Fetch error"),
-		JsonError: () => Effect.succeed('Json error')
+		JsonError: () => Effect.succeed('Json error'),
+		ParseError: () => Effect.succeed('Parse error')
 	})
 )
 
