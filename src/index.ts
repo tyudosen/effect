@@ -34,10 +34,10 @@ const main = pipe(
 	fetchRequest,
 	Effect.flatMap(jsonResponse),
 	Effect.tap((res) => Console.log(res)),
-	Effect.catchTag(
-		"JsonError",
-		() => savePokemon("pikachu").pipe(Effect.flatMap(jsonResponse))
-	),
+	Effect.catchTags({
+		FetchError: () => Effect.succeed("Fetch error"),
+		JsonError: () => Effect.succeed('Json error')
+	}),
 	Effect.tap((res) => Console.log(res)),
 
 
