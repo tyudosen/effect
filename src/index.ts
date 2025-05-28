@@ -1,56 +1,20 @@
 import { Config, Console, Data, Effect, Schema } from "effect";
 import { Pokemon } from "./schemas";
-
-const config = Config.string('BASE_URL');
-
-
-class FetchError extends Data.TaggedError("FetchError")<
-	{
-		customMessage: string
-	}
-> { }
-
-class JsonError extends Data.TaggedError("JsonError")<
-	{
-		customMessage: string
-	}
-> { }
-
-
+import { PokeApi, PokeApiLive } from "./PokeApi";
 
 const program = Effect.gen(function* () {
-	const baseUrl = yield* config;
-	const response = yield* Effect.tryPromise(
-		{
-			try: () => fetch(`${baseUrl}/api/v2/pokemon/garchomp/`),
-			catch: () => new FetchError({ customMessage: "Fetch failed" })
-		}
-	)
+	const pokeApi = yield* PokeApi;
+	return yield* pokeApi.getPokemon;
+});
 
+const runnable = program.pipe(Effect.provideService(PokeApi, PokeApiLive));
 
-	if (!response.ok) {
-		throw new FetchError({ customMessage: 'fetchError' })
-	}
-
-	const json = yield* Effect.tryPromise(
-		{
-			try: () => response.json(),
-			catch: () => new JsonError({ customMessage: 'Json error' })
-		}
-	)
-
-	return yield* Schema.decodeUnknown(Pokemon)(json)
-
-})
-
-const main = program.pipe(
-	Effect.tap((res) => Console.log(res)),
+const main = runnable.pipe(
 	Effect.catchTags({
 		FetchError: () => Effect.succeed("Fetch error"),
-		JsonError: () => Effect.succeed('Json error'),
-		ParseError: () => Effect.succeed('Parse error'),
+		JsonError: () => Effect.succeed("Json error"),
+		ParseError: () => Effect.succeed("Parse error"),
 	})
-)
+);
 
-
-Effect.runPromise(main)
+Effect.runPromise(main).then(console.log);
