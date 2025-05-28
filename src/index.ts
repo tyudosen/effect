@@ -34,34 +34,24 @@ const savePokemon = (pokemon: string) => Effect.tryPromise(
 )
 
 
-// const main = pipe(
-// 	fetchRequest,
-// 	Effect.filterOrFail(
-// 		(response) => response.ok,
-// 		() => new FetchError({ customMessage: "Fetch failed" })),
-// 	Effect.flatMap(jsonResponse),
-// 	Effect.tap((res) => Console.log(res)),
-// 	Effect.catchTags({
-// 		FetchError: () => Effect.succeed("Fetch error"),
-// 		JsonError: () => Effect.succeed('Json error')
-// 	}),
-// 	Effect.tap((res) => Console.log(res)),
-//
-//
-// )
-
-const main = Effect.gen(function* () {
+const program = Effect.gen(function* () {
 	const response = yield* fetchRequest;
 
 	if (!response.ok) {
 		throw new FetchError({ customMessage: 'fetchError' })
 	}
 
-	const data = yield* jsonResponse(response)
-	yield* Console.log(data);
+	return yield* jsonResponse(response)
 
-	return data
 })
+
+const main = program.pipe(
+	Effect.tap((res) => Console.log(res)),
+	Effect.catchTags({
+		FetchError: () => Effect.succeed("Fetch error"),
+		JsonError: () => Effect.succeed('Json error')
+	})
+)
 
 
 Effect.runPromise(main)
