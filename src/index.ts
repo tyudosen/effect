@@ -1,31 +1,35 @@
-import { Console, Effect, pipe } from "effect";
+import { Console, Data, Effect, pipe } from "effect";
 
-interface FetchError {
-	readonly _tag: "FetchError"
-}
+class FetchError extends Data.TaggedError("FetchError")<
+	{
+		customMessage: string
+	}
+> { }
 
-interface JsonError {
-	readonly _tag: "JsonError"
-}
+class JsonError extends Data.TaggedError("JsonError")<
+	{
+		customMessage: string
+	}
+> { }
 
 const fetchRequest = Effect.tryPromise(
 	{
 		try: () => fetch("https://pokeapi.co/api/v2/pokemon/garchomp/"),
-		catch: (): FetchError => ({ _tag: "FetchError" })
+		catch: () => new FetchError({ customMessage: "Fetch failed" })
 	}
 )
 
 const jsonResponse = (response: Response) => Effect.tryPromise(
 	{
 		try: () => response.json(),
-		catch: (): JsonError => ({ _tag: "JsonError" })
+		catch: () => new JsonError({ customMessage: 'Json error' })
 	}
 )
 
 const savePokemon = (pokemon: string) => Effect.tryPromise(
 	{
 		try: () => fetch(`https://pokeapi.co/api/v2/pokemon/${pokemon}/`),
-		catch: (): FetchError => ({ _tag: 'FetchError' })
+		catch: () => new FetchError({ customMessage: "Fetch failed" })
 	}
 )
 
@@ -34,10 +38,7 @@ const main = pipe(
 	fetchRequest,
 	Effect.filterOrFail(
 		(response) => response.ok,
-		(): FetchError => ({
-			_tag: "FetchError"
-		})
-	),
+		() => new FetchError({ customMessage: "Fetch failed" })),
 	Effect.flatMap(jsonResponse),
 	Effect.tap((res) => Console.log(res)),
 	Effect.catchTags({
@@ -48,5 +49,6 @@ const main = pipe(
 
 
 )
+
 
 Effect.runPromise(main)
