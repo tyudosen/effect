@@ -1,17 +1,8 @@
-import { Config, Console, Data, Effect, pipe, Schema } from "effect";
+import { Config, Console, Data, Effect, Schema } from "effect";
+import { Pokemon } from "./schemas";
 
 const config = Config.string('BASE_URL');
 
-class Pokemon extends Schema.Class<Pokemon>("Pokemon")({
-	// 👇 Parameters are the same as `Schema.Struct`
-	id: Schema.Number,
-	order: Schema.Number,
-	name: Schema.String,
-	height: Schema.Number,
-	weight: Schema.Number,
-}) { }
-
-const decodePokemon = Schema.decodeUnknown(Pokemon)
 
 class FetchError extends Data.TaggedError("FetchError")<
 	{
@@ -25,38 +16,30 @@ class JsonError extends Data.TaggedError("JsonError")<
 	}
 > { }
 
-const fetchRequest = (baseUrl: string) => Effect.tryPromise(
-	{
-		try: () => fetch(`${baseUrl}/api/v2/pokemon/garchomp/`),
-		catch: () => new FetchError({ customMessage: "Fetch failed" })
-	}
-)
-
-const jsonResponse = (response: Response) => Effect.tryPromise(
-	{
-		try: () => response.json(),
-		catch: () => new JsonError({ customMessage: 'Json error' })
-	}
-)
-
-const savePokemon = (pokemon: string) => Effect.tryPromise(
-	{
-		try: () => fetch(`https://pokeapi.co/api/v2/pokemon/${pokemon}/`),
-		catch: () => new FetchError({ customMessage: "Fetch failed" })
-	}
-)
 
 
 const program = Effect.gen(function* () {
 	const baseUrl = yield* config;
-	const response = yield* fetchRequest(baseUrl);
+	const response = yield* Effect.tryPromise(
+		{
+			try: () => fetch(`${baseUrl}/api/v2/pokemon/garchomp/`),
+			catch: () => new FetchError({ customMessage: "Fetch failed" })
+		}
+	)
+
 
 	if (!response.ok) {
 		throw new FetchError({ customMessage: 'fetchError' })
 	}
 
-	const json = yield* jsonResponse(response)
-	return yield* decodePokemon(json)
+	const json = yield* Effect.tryPromise(
+		{
+			try: () => response.json(),
+			catch: () => new JsonError({ customMessage: 'Json error' })
+		}
+	)
+
+	return yield* Schema.decodeUnknown(Pokemon)(json)
 
 })
 
