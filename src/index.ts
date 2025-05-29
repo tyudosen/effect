@@ -1,13 +1,24 @@
-import { Config, Console, Data, Effect, Schema } from "effect";
+import { Config, Console, Data, Effect, Layer, Schema } from "effect";
 import { Pokemon } from "./schemas";
 import { PokeApi } from "./PokeApi";
+import { PokemonCollection } from "./PokemonCollection";
+import { BuildPokeApiUrl } from "./BuildPokeApiUrl";
+import { PokeApiUrl } from "./PokeApiUrl";
+
+const MainLayer = Layer.mergeAll(
+	PokeApi.Live,
+	PokemonCollection.Live,
+	BuildPokeApiUrl.Live,
+	PokeApiUrl.Live
+);
+
 
 const program = Effect.gen(function* () {
 	const pokeApi = yield* PokeApi;
 	return yield* pokeApi.getPokemon;
 });
 
-const runnable = program.pipe(Effect.provideService(PokeApi, PokeApi.Live));
+const runnable = program.pipe(Effect.provide(MainLayer));
 
 const main = runnable.pipe(
 	Effect.catchTags({
