@@ -5,38 +5,31 @@ import { Pokemon } from "./schemas";
 import { PokemonCollection } from "./PokemonCollection";
 import { BuildPokeApiUrl } from "./BuildPokeApiUrl";
 
-export interface PokeApiImpl {
-	readonly getPokemon: Effect.Effect<Pokemon,
-		FetchError | JsonError | ParseResult.ParseError | ConfigError>;
+const make = {
+	getPokemon: Effect.gen(function* () {
+		const pokemonCollection = yield* PokemonCollection;
+		const buildPokeApiUrl = yield* BuildPokeApiUrl;
 
-}
+		const requestUrl = buildPokeApiUrl({ name: pokemonCollection[0] });
 
-export class PokeApi extends Context.Tag("PokeApi")<PokeApi, PokeApiImpl>() {
-	static readonly Live = PokeApi.of({
-		getPokemon: Effect.gen(function* () {
-			const pokemonCollection = yield* PokemonCollection;
-			const buildPokeUrl = yield* BuildPokeApiUrl;
+		const response = yield* Effect.tryPromise({
+			try: () => fetch(requestUrl),
+			catch: () => new FetchError({ customMessage: 'Fetch Error' }),
+		});
 
-			const requestUrl = buildPokeUrl({
-				name: pokemonCollection[0]
-			})
+		if (!response.ok) {
+			return yield* new FetchError({ customMessage: 'Fetch Error' });
+		}
 
-			const response = yield* Effect.tryPromise({
-				try: () => fetch(requestUrl),
-				catch: () => new FetchError({ customMessage: 'Fetch Error' }),
-			});
+		const json = yield* Effect.tryPromise({
+			try: () => response.json(),
+			catch: () => new JsonError({ customMessage: 'JSON Error' }),
+		});
 
+		return yield* Schema.decodeUnknown(Pokemon)(json);
+	}),
+};
 
-			if (!response.ok) {
-				return yield* new FetchError({ customMessage: 'Fetch error' });
-			}
-
-			const json = yield* Effect.tryPromise({
-				try: () => response.json(),
-				catch: () => new JsonError({ customMessage: 'Json error' }),
-			});
-
-			return yield* Schema.decodeUnknown(Pokemon)(json);
-		}),
-	});
+export class PokeApi extends Context.Tag("PokeApi")<PokeApi, typeof make>() {
+	static readonly Live = PokeApi.of(make);
 }
