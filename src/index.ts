@@ -1,12 +1,8 @@
-import { Config, Console, Data, Effect, Layer, Schema } from "effect";
-import { Pokemon } from "./schemas";
+import { Effect, Layer } from "effect";
 import { PokeApi } from "./PokeApi";
-import { PokemonCollection } from "./PokemonCollection";
-import { BuildPokeApiUrl } from "./BuildPokeApiUrl";
-import { PokeApiUrl } from "./PokeApiUrl";
 
 const MainLayer = Layer.mergeAll(
-	PokeApi.Live,
+	PokeApi.Default,
 );
 
 
