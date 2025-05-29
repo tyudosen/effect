@@ -2,6 +2,8 @@ import { Config, Context, Effect, Schema, type ParseResult } from "effect";
 import { type ConfigError } from "effect/ConfigError";
 import { FetchError, JsonError } from "./errors";
 import { Pokemon } from "./schemas";
+import { PokemonCollection } from "./PokemonCollection";
+import { BuildPokeApiUrl } from "./BuildPokeApiUrl";
 
 export interface PokeApiImpl {
 	readonly getPokemon: Effect.Effect<Pokemon,
@@ -12,12 +14,18 @@ export interface PokeApiImpl {
 export class PokeApi extends Context.Tag("PokeApi")<PokeApi, PokeApiImpl>() {
 	static readonly Live = PokeApi.of({
 		getPokemon: Effect.gen(function* () {
-			const baseUrl = yield* Config.string("BASE_URL");
+			const pokemonCollection = yield* PokemonCollection;
+			const buildPokeUrl = yield* BuildPokeApiUrl;
+
+			const requestUrl = buildPokeUrl({
+				name: pokemonCollection[0]
+			})
 
 			const response = yield* Effect.tryPromise({
-				try: () => fetch(`${baseUrl}/api/v2/pokemon/garchomp/`),
-				catch: () => new FetchError({ customMessage: 'Fetch error' }),
+				try: () => fetch(requestUrl),
+				catch: () => new FetchError({ customMessage: 'Fetch Error' }),
 			});
+
 
 			if (!response.ok) {
 				return yield* new FetchError({ customMessage: 'Fetch error' });
