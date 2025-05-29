@@ -12,5 +12,8 @@ export class BuildPokeApiUrl extends Context.Tag("BuildPokeApiUrl")<
 			const pokeApiUrl = yield* PokeApiUrl;
 			return ({ name }) => `${pokeApiUrl}/${name}`;
 		})
+	).pipe(
+		// 👇 `PokeApiUrl` is provided from `BuildPokeApiUrl`
+		Layer.provide(PokeApiUrl.Live)
 	);
 }

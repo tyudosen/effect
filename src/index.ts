@@ -7,9 +7,6 @@ import { PokeApiUrl } from "./PokeApiUrl";
 
 const MainLayer = Layer.mergeAll(
 	PokeApi.Live,
-	PokemonCollection.Live,
-	BuildPokeApiUrl.Live.pipe(Layer.provide(PokeApiUrl.Live)),
-	PokeApiUrl.Live
 );
 
 
