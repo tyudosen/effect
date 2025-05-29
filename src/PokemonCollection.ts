@@ -1,5 +1,10 @@
-import { Array, Context } from "effect";
+import { Effect } from "effect";
 
-export class PokemonCollection extends Context.Tag("PokemonCollection")<PokemonCollection, Array.NonEmptyArray<string>>() {
+export class PokemonCollection extends Effect.Service<PokemonCollection>()(
+	"PokemonCollection",
+	{
+		succeed: ["staryu", "perrserker", "flaaffy"],
+	}
+) {
 
 }
